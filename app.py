@@ -2,45 +2,48 @@ import streamlit as st
 import time
 import os
 from dotenv import load_dotenv
-from streamlit_ace import st_ace  # The Monaco-based editor component
+from streamlit_ace import st_ace
 
-# 1. IMPORT ASMIT'S ENGINES
+# 1. ENGINES INTEGRATION
 from chat_engine import ChatRoomManager
 from auth_engine import AuthManager
 
 load_dotenv()
 
 # ---------------------------------------------------------
-# 2. THE MASTER ARNOK STYLESHEET
+# 2. CONSOLIDATED MASTER STYLESHEET (Fixes Black Box Glitch)
 # ---------------------------------------------------------
 st.set_page_config(page_title="Arknok DevSync", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    /* Global Styles */
+    /* Global Background & Clean UI */
     .stApp { background-color: #0E1116 !important; color: #E6EDF3 !important; font-family: 'Inter', sans-serif; }
+    [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; }
     
-    /* Figma Login Card */
+    /* Login Card: No ghost boxes */
     .login-card {
-        background-color: #161B22; padding: 50px; border-radius: 16px;
+        background-color: #161B22; padding: 40px; border-radius: 16px;
         border: 1px solid #30363D; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .login-header { font-size: 32px; font-weight: 700; color: #FFFFFF; margin-bottom: 5px; }
-    .login-subtitle { color: #8B949E; margin-bottom: 30px; }
+    .login-header { font-size: 32px; font-weight: 700; color: #FFFFFF; text-align: center; }
+    .login-subtitle { color: #8B949E; text-align: center; margin-bottom: 20px; }
     
-    /* Sidebar: Stealth & Status */
+    /* Sidebar Stealth Mode */
     [data-testid="stSidebar"] { background-color: #0D0D0D !important; border-right: 1px solid #1F1F1F !important; }
     
-    /* Right Panel: Glowing AI Assistant */
-    [data-testid="column"]:nth-of-type(2) { background-color: #161412 !important; border-left: 1px solid #302A24 !important; padding: 24px !important; border-radius: 12px; }
-    .ai-header { color: #FF6B00; font-weight: 700; font-size: 18px; margin-bottom: 10px; }
-    .ai-fix-card { background-color: #1C1917; border: 1px solid #44372B; border-radius: 12px; padding: 15px; }
+    /* VS Code Input Vibe */
+    .stChatInput textarea { font-family: 'Courier New', monospace !important; background-color: #0D1117 !important; color: #58A6FF !important; }
     
-    /* Action Buttons (Orange Gradient) */
+    /* Glowing Arknok AI Panel */
+    [data-testid="column"]:nth-of-type(2) { background-color: #161412 !important; border-left: 1px solid #302A24 !important; padding: 24px !important; border-radius: 12px; }
+    .ai-fix-card { background-color: #1C1917; border: 1px solid #44372B; border-radius: 12px; padding: 15px; margin-top: 10px; }
+    
+    /* DevSync Action Buttons */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #FF6B00 0%, #E65C00 100%) !important;
         border: none !important; color: white !important; font-weight: 600 !important;
-        height: 48px !important; border-radius: 10px !important; transition: 0.3s !important;
+        height: 48px !important; border-radius: 8px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -55,152 +58,123 @@ if 'manager' not in st.session_state:
     st.session_state.manager = ChatRoomManager()
     st.session_state.manager.create_room("React Hooks Deep Dive", language="TypeScript")
     st.session_state.manager.create_room("Python ML Pipeline", language="Python")
-    st.session_state.manager.create_room("Backend API", language="Node.js")
     st.session_state.active_room = "React Hooks Deep Dive"
-    st.session_state.latest_ai_fix = "No bugs detected yet. Use @ai to begin context analysis."
 
 # ---------------------------------------------------------
-# 4. FUNCTIONAL AUTHENTICATION FLOW
+# 4. AUTHENTICATION (Figma-Strict)
 # ---------------------------------------------------------
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    col1, col2, col3 = st.columns([1, 1.4, 1])
+    _, col2, _ = st.columns([1, 1.4, 1])
     with col2:
         st.markdown("<div class='login-card'>", unsafe_allow_html=True)
         st.markdown("<div class='login-header'>Welcome back</div>", unsafe_allow_html=True)
         st.markdown("<div class='login-subtitle'>Sign in to continue coding</div>", unsafe_allow_html=True)
         
-        tab1, tab2 = st.tabs(["Login", "Sign Up"])
-        with tab1:
-            log_user = st.text_input("Username", placeholder="", key="log_user") # Placeholder removed
+        t1, t2 = st.tabs(["Login", "Sign Up"])
+        with t1:
+            log_user = st.text_input("Username", placeholder="", key="log_user") # Suggestion removed
             log_pass = st.text_input("Password", type="password", placeholder="", key="log_pass")
-            if st.button("Sign In →", type="primary", use_container_width=True, key="login_submit"):
+            if st.button("Sign In →", type="primary", use_container_width=True):
                 success, msg = st.session_state.auth_manager.login(log_user, log_pass)
                 if success:
                     st.session_state.authenticated = True
                     st.session_state.username = log_user
                     st.rerun()
                 else: st.error(msg)
-        with tab2:
-            reg_user = st.text_input("Choose Username", placeholder="e.g., SanketMohapatra06", key="reg_user")
-            reg_pass = st.text_input("Choose Password", type="password", placeholder="Minimum 8 characters", key="reg_pass")
-            if st.button("Create Account", use_container_width=True, key="signup_submit"):
+        with t2:
+            reg_user = st.text_input("Choose Username", key="reg_user")
+            reg_pass = st.text_input("Choose Password", type="password", key="reg_pass")
+            if st.button("Create Account", use_container_width=True):
                 success, msg = st.session_state.auth_manager.signup(reg_user, reg_pass)
-                if success: st.success("Account created! Switch to Login tab.")
+                if success: st.success("Account created!")
                 else: st.error(msg)
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 # ---------------------------------------------------------
-# 5. THE MAIN WORKSPACE (Integrated Logic)
+# 5. WORKSPACE (History Sync Fix)
 # ---------------------------------------------------------
 current_room = st.session_state.manager.get_room(st.session_state.active_room)
 current_room.join(st.session_state.username)
 
 @st.fragment(run_every="5s")
 def sync_member_status(room):
-    """Refreshes status dots in the sidebar"""
     st.caption(f"ONLINE — {len([m for m in room.members.values() if m == 'online'])}")
     for user, status in room.members.items():
         color = "#23A559" if status == "online" else "#80848E"
         st.markdown(f"<span style='color:{color}'>●</span> **{user}**", unsafe_allow_html=True)
 
 with st.sidebar:
-    st.subheader("DevSync AI")
-    st.caption("Collaborative Coding Hub")
-    st.write("---")
-    
-    with st.expander("➕ Create New Room"): # Re-inserted
-        new_name = st.text_input("Room Name", placeholder="e.g., React Bug Bash", key="sidebar_new_room")
-        new_lang = st.selectbox("Language", ["TypeScript", "Python", "JavaScript", "C++", "Go"], key="sidebar_lang")
-        if st.button("Create Room", type="primary", use_container_width=True, key="sidebar_create"):
-            if new_name:
-                st.session_state.manager.create_room(new_name, language=new_lang)
-                st.session_state.active_room = new_name
+    st.markdown("### DevSync AI")
+    with st.expander("➕ Create New Room"):
+        n_name = st.text_input("Room Name", key="room_name_input")
+        n_lang = st.selectbox("Language", ["TypeScript", "Python", "JavaScript", "C++"], key="room_lang_input")
+        if st.button("Create", type="primary", use_container_width=True):
+            if n_name:
+                st.session_state.manager.create_room(n_name, language=n_lang)
+                st.session_state.active_room = n_name
                 st.rerun()
-
     st.write("---")
-    st.caption("CHANNELS")
+    st.caption("MY CHANNELS")
     for room_info in st.session_state.manager.list_rooms():
-        if st.button(f"# {room_info['name']}", key=f"nav_final_{room_info['name']}", use_container_width=True):
+        if st.button(f"# {room_info['name']}", key=f"nav_v4_{room_info['name']}", use_container_width=True):
             st.session_state.active_room = room_info['name']
             st.rerun()
-            
     st.write("---")
     sync_member_status(current_room)
-    
     st.write("---")
-    if st.button("🚪 Log Out", use_container_width=True, key="logout_final"):
+    if st.button("🚪 Log Out", use_container_width=True, key="lo_btn"):
         current_room.leave(st.session_state.username)
         st.session_state.authenticated = False
         st.rerun()
 
-# Workspace Layout: 2.5 : 1.2
+# 3-PANEL LAYOUT
 chat_col, ai_col = st.columns([2.5, 1.2], gap="large")
 
 with chat_col:
     st.markdown(f"### # {current_room.name}")
-    st.caption(f"{current_room.language} • {len(current_room.members)} members")
-    st.write("---")
+    c_tab, e_tab = st.tabs(["💬 Team Chat", "💻 VS Code Workspace"])
 
-    # THE VS CODE WORKSPACE TABS
-    chat_tab, editor_tab = st.tabs(["💬 Team Chat", "💻 VS Code Workspace"])
-
-    with chat_tab:
+    with c_tab:
         for msg in current_room.messages:
-            is_ai = msg["user"] == "AI_Assistant"
-            with st.chat_message("assistant" if is_ai else "user"):
+            with st.chat_message("assistant" if msg["user"] == "AI_Assistant" else "user"):
                 st.markdown(f"<span style='color:gray; font-size:12px;'>{msg['user']} • {msg['timestamp']}</span>", unsafe_allow_html=True)
                 st.markdown(msg["content"])
 
-        if prompt := st.chat_input("Type a message or use @ai to debug..."):
-            with st.chat_message("user"):
-                st.markdown(prompt)
+        if prompt := st.chat_input("Type a message or use @ai..."):
+            with st.chat_message("user"): st.markdown(prompt)
             if "@ai" in prompt.lower():
                 with st.chat_message("assistant"):
-                    with st.spinner("Arknok AI is analyzing context..."): # Shadow typing spinner
-                        ai_response = current_room.add_message(st.session_state.username, prompt)
-                if ai_response: st.session_state.latest_ai_fix = ai_response["content"]
+                    with st.spinner("Arknok AI analyzing..."):
+                        current_room.add_message(st.session_state.username, prompt)
             else:
                 current_room.add_message(st.session_state.username, prompt)
             st.rerun()
 
-    with editor_tab:
-        # THE EMBEDDED CODE EDITOR
-        st.caption(f"Contextual Sync Enabled: {current_room.language}")
-        lang_map = {"TypeScript": "typescript", "Python": "python", "JavaScript": "javascript", "C++": "c_cpp", "Go": "golang", "Node.js": "javascript"}
-        
-        raw_code = st_ace(
-            language=lang_map.get(current_room.language, "python"),
-            theme="monokai",
-            keybinding="vscode",
-            font_size=14,
-            height=400,
-            key=f"editor_final_{current_room.name}"
-        )
-        
-        if st.button("Send Code to Arknok AI 🚀", use_container_width=True, key="send_code_btn"):
+    with e_tab:
+        st.caption(f"Language: {current_room.language}")
+        # Key includes room name to reset state when switching rooms
+        raw_code = st_ace(language=current_room.language.lower(), theme="monokai", height=400, key=f"ace_v2_{current_room.name}")
+        if st.button("Send Code to Arknok AI 🚀", use_container_width=True):
             if raw_code:
-                hidden_prompt = f"@ai Analyze and fix this code:\n\n```{raw_code}```"
-                with st.spinner("Arknok AI is reviewing editor content..."):
-                    ai_response = current_room.add_message(st.session_state.username, hidden_prompt)
-                if ai_response: st.session_state.latest_ai_fix = ai_response["content"]
-                st.toast("✨ Arknok AI has a new insight!") # Visual feedback cue
-            else: st.warning("Editor is empty!")
+                hidden_p = f"@ai Fix this {current_room.language} code:\n\n```{raw_code}```"
+                current_room.add_message(st.session_state.username, hidden_p)
+                st.toast("✨ Arknok AI insight generated!")
+                st.rerun()
 
 with ai_col:
-    # REBRANDED TO ARKNOK AI
-    st.markdown("<div class='ai-header'>✨ Arknok AI</div>", unsafe_allow_html=True)
+    # REBRANDED & PERSISTENT HISTORY
+    st.markdown("<div style='color: #FF6B00; font-weight: 700; font-size: 18px;'>✨ Arknok AI</div>", unsafe_allow_html=True)
     st.caption("Monitoring session context")
     
-    st.markdown("<div class='ai-fix-card'>", unsafe_allow_html=True)
-    st.markdown("**Latest Insight:**")
-    st.markdown(st.session_state.latest_ai_fix)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # PULSE FROM ACTUAL ROOM HISTORY (Fixes the tab-switch bug)
+    ai_history = [m for m in current_room.messages if m["user"] == "AI_Assistant"]
+    current_insight = ai_history[-1]["content"] if ai_history else "No bugs detected yet. Use @ai to begin."
     
+    st.markdown(f"<div class='ai-fix-card'>{current_insight}</div>", unsafe_allow_html=True)
     st.write("---")
-    # PRIMARY ACTION
-    if st.button("Apply Fix 🛠️", type="primary", use_container_width=True, key="apply_fix_submit"):
-        st.success("Correction applied to local buffer!")
+    if st.button("Apply Fix 🛠️", type="primary", use_container_width=True):
+        st.success("Correction staged to IDE buffer!")
