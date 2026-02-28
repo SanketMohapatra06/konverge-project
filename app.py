@@ -11,63 +11,70 @@ load_dotenv()
 st.set_page_config(page_title="DevSync AI", page_icon="🚀", layout="wide", initial_sidebar_state="expanded")
 
 # 2. DEVSYNC CUSTOM UI STYLING
-st.markdown("""
+sst.markdown("""
     <style>
-    /* 1. The Global Background (GitHub Dark) */
-    .stApp {
-        background-color: #0D1117 !important;
-        color: #E6EDF3 !important;
-    }
-
-    /* 2. Sidebar Customization */
+    /* 1. Global Dark Theme */
+    .stApp { background-color: #0E1116 !important; color: #E6EDF3; }
+    [data-testid="stHeader"] { background-color: transparent !important; }
+    
+    /* 2. SIDEBAR - Stealth Mode (No Orange Blocks) */
     [data-testid="stSidebar"] {
         background-color: #161B22 !important;
-        border-right: 1px solid #30363d !important;
-        min-width: 300px !important;
+        border-right: 1px solid #30363D !important;
     }
-
-    /* 3. The "DevSync Orange" Primary Buttons */
-    div.stButton > button:first-child {
-        background-color: #FF6B00 !important; /* Deep Orange */
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 700 !important;
-        height: 3em !important;
-        transition: 0.3s ease all !important;
-    }
-    div.stButton > button:first-child:hover {
-        background-color: #E65C00 !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3) !important;
-    }
-
-    /* 4. Room Selection Buttons (Ghost Style) */
-    .stButton > button {
+    /* Make sidebar buttons look like plain text */
+    [data-testid="stSidebar"] div.stButton > button {
         background-color: transparent !important;
+        border: none !important;
         color: #8B949E !important;
-        border: 1px solid #30363d !important;
         text-align: left !important;
-        padding-left: 20px !important;
+        justify-content: flex-start !important;
+        font-weight: 500 !important;
+        padding: 5px 10px !important;
+        box-shadow: none !important;
     }
-    .stButton > button:hover {
+    [data-testid="stSidebar"] div.stButton > button:hover {
+        color: #FFFFFF !important;
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* 3. RIGHT AI PANEL - Clean Cards & Buttons */
+    /* Container styling for the AI response */
+    [data-testid="column"]:nth-of-type(2) {
+        background-color: #13171C !important;
+        border-left: 1px solid #30363D !important;
+        padding: 20px !important;
+        border-radius: 12px;
+    }
+    /* Secondary Action Buttons (Explain, Optimize) */
+    [data-testid="column"]:nth-of-type(2) div.stButton > button {
+        background-color: #1A1F26 !important;
+        border: 1px solid #30363D !important;
+        color: #E6EDF3 !important;
+        border-radius: 8px !important;
+        width: 100% !important;
+        margin-bottom: 5px !important;
+    }
+    [data-testid="column"]:nth-of-type(2) div.stButton > button:hover {
         border-color: #FF6B00 !important;
         color: #FF6B00 !important;
     }
-
-    /* 5. Chat Input Styling */
-    .stChatInputContainer {
-        padding-bottom: 20px !important;
+    
+    /* 4. THE DEVSYNC ORANGE BUTTON (Only for Apply Fix) */
+    div.stButton > button[kind="primary"] {
+        background-color: #FF6B00 !important;
+        color: white !important;
+        border: none !important;
+        font-weight: bold !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #E65C00 !important;
     }
     
-    /* 6. AI Assistant Panel Glow */
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        border: 1px solid #30363d !important;
-        border-radius: 12px !important;
-        background-color: #161B22 !important;
-    }
+    /* 5. Chat Input */
+    .stChatInputContainer { border-top: 1px solid #30363D; padding-top: 10px; }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # 3. INITIALIZE BACKEND IN SESSION STATE
 if 'manager' not in st.session_state:
