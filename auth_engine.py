@@ -1,6 +1,11 @@
 class AuthManager:
     def __init__(self):
-        self.users = {}  # username -> password
+        # Pre-load some accounts so the judges can test it instantly without signing up
+        self.users = {
+            "SanketMohapatra06": "password123",
+            "VarunSir": "gate2026",
+            "Asmit": "ai_god"
+        }
 
     def signup(self, username, password):
         if username in self.users:
