@@ -78,16 +78,16 @@ if not st.session_state.authenticated:
 # ---------------------------------------------------------
 # 5. CORE WORKSPACE & LOGIC
 # ---------------------------------------------------------
+# Access Asmit's room manager and ensure user is online
 current_room = st.session_state.manager.get_room(st.session_state.active_room)
 
-# Ensure the logged-in user is actually 'online' in the current room
 if st.session_state.authenticated:
     current_room.join(st.session_state.username)
 
-# --- THE SIDEBAR FIX ---
+# --- THE SIDEBAR FRAGMENT ---
 @st.fragment(run_every="5s")
 def sync_member_status(room):
-    """Refreshes ONLY the status dots without crashing Streamlit."""
+    """Refreshes ONLY the status dots without crashing Streamlit"""
     st.caption(f"ONLINE — {len([m for m in room.members.values() if m == 'online'])}")
     for user, status in room.members.items():
         if status == "online":
@@ -95,61 +95,47 @@ def sync_member_status(room):
         else:
             st.markdown(f"⚪ {user}")
 
+# --- SINGLE CLEAN SIDEBAR DEFINITION ---
 with st.sidebar:
     st.subheader("DevSync AI")
     st.write("---")
     
-    # 1. THE CREATE ROOM "MODAL"
+    # 1. THE CREATE ROOM SECTION
     with st.expander("➕ Create New Room"):
-        new_name = st.text_input("Room Name", placeholder="e.g., React Bug Bash")
-        new_lang = st.selectbox("Language", ["TypeScript", "Python", "JavaScript", "C++", "Go"])
+        new_name = st.text_input("Room Name", placeholder="e.g., React Bug Bash", key="new_room_name_input")
+        new_lang = st.selectbox("Language", ["TypeScript", "Python", "JavaScript", "C++", "Go"], key="new_room_lang_select")
         
-        if st.button("Create Room", type="primary", use_container_width=True):
+        if st.button("Create Room", type="primary", use_container_width=True, key="sidebar_create_btn"):
             if new_name:
-                # Calls Asmit's manager to add the room to the 'database'
                 st.session_state.manager.create_room(new_name, language=new_lang)
                 st.session_state.active_room = new_name
-                st.success(f"Room {new_name} created!")
                 st.rerun()
 
     st.write("---")
     st.caption("CHANNELS")
-    # Dynamically lists all rooms, including the ones you just created
-    for room_info in st.session_state.manager.list_rooms():
-        if st.button(f"# {room_info['name']}", key=f"nav_{room_info['name']}", use_container_width=True):
-            st.session_state.active_room = room_info['name']
-            st.rerun()
-            
-    st.write("---")
-    # CALL THE FRAGMENT HERE
-    sync_member_status(current_room)
     
-    st.write("---")
-    if st.button("🚪 Log Out", use_container_width=True):
-        current_room.leave(st.session_state.username)
-        st.session_state.authenticated = False
-        st.rerun()
-    
-    st.caption("CHANNELS")
+    # 2. THE NAVIGATION LOOP (FIXED: NO DUPLICATES)
     for room_info in st.session_state.manager.list_rooms():
-        # Clean ghost buttons for rooms
-        if st.button(f"# {room_info['name']}", key=f"nav_{room_info['name']}", use_container_width=True):
-            st.session_state.active_room = room_info['name']
+        # Added unique suffix to keys to prevent DuplicateElementKey error
+        room_name = room_info['name']
+        if st.button(f"# {room_name}", key=f"nav_sidebar_v1_{room_name}", use_container_width=True):
+            st.session_state.active_room = room_name
             st.rerun()
             
     st.write("---")
     
-    # 1. CALL THE FRAGMENT HERE (Fixed the StreamlitAPIException)
+    # 3. CALL THE STATUS FRAGMENT
     sync_member_status(current_room)
     
     st.write("---")
-    # 2. LOGOUT BUTTON
-    if st.button("🚪 Log Out", use_container_width=True):
+    
+    # 4. LOGOUT BUTTON
+    if st.button("🚪 Log Out", use_container_width=True, key="sidebar_logout_btn_final"):
         current_room.leave(st.session_state.username)
         st.session_state.authenticated = False
         st.rerun()
 
-# --- MAIN WORKSPACE LAYOUT ---
+# --- MAIN WORKSPACE LAYOUT (3-PANEL VIEW) ---
 chat_col, ai_col = st.columns([2.5, 1.2], gap="large")
 
 with chat_col:
@@ -157,7 +143,7 @@ with chat_col:
     st.caption(f"{current_room.language} • {len(current_room.members)} members")
     st.write("---")
 
-    # Scrollable Chat Stream
+    # Scrollable Chat Stream with Avatars
     for msg in current_room.messages:
         role = "assistant" if msg["user"] == "AI_Assistant" else "user"
         with st.chat_message(role):
@@ -166,18 +152,17 @@ with chat_col:
 
     # VS CODE STYLE INPUT & SHADOW TYPING
     if prompt := st.chat_input("Paste code or type @ai to debug..."):
-        # Immediate display
         with st.chat_message("user"):
             st.markdown(f"**{st.session_state.username}**")
             st.markdown(prompt)
 
         if "@ai" in prompt.lower():
             with st.chat_message("assistant"):
-                # Simulated typing/shadow typing
+                # Simulated typing effect using st.spinner
                 with st.spinner("Arknok AI is analyzing context..."):
                     ai_response = current_room.add_message(st.session_state.username, prompt)
             
-            # Update Right Panel with AI Fix
+            # Update Right Panel with latest fix
             if ai_response: 
                 st.session_state.latest_ai_fix = ai_response["content"]
         else:
@@ -185,17 +170,17 @@ with chat_col:
         st.rerun()
 
 with ai_col:
-    # THE HERO PANEL
+    # THE AI ASSISTANT SIDE PANEL
     st.subheader("✨ AI Assistant")
-    st.caption("Monitoring # " + current_room.name)
+    st.caption("Monitoring session context")
     st.write("---")
     
     with st.container(border=True):
         st.markdown("**Current Analysis:**")
-        # Renders the fix from Asmit's engine in a code block
+        # Renders the fix in a code block inside a container
         st.markdown(st.session_state.latest_ai_fix)
         
         st.write("---")
-        # THE DEVSYNC ORANGE BUTTON
-        if st.button("Apply Fix 🛠️", type="primary", use_container_width=True):
-            st.success("Code correction applied to local buffer!")
+        # THE DEVSYNC ORANGE ACTION BUTTON
+        if st.button("Apply Fix 🛠️", type="primary", use_container_width=True, key="ai_apply_fix_btn"):
+            st.success("Code correction staged to your IDE.")
