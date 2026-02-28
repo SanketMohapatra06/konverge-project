@@ -13,25 +13,61 @@ st.set_page_config(page_title="DevSync AI", page_icon="🚀", layout="wide", ini
 # 2. DEVSYNC CUSTOM UI STYLING
 st.markdown("""
     <style>
-    .stApp { background-color: #0D1117; color: #E6EDF3; }
-    [data-testid="stSidebar"] { background-color: #161B22; border-right: 1px solid #30363d; }
-    
-    /* Room Buttons (Orange Hover) */
-    .stButton>button {
-        width: 100%; border-radius: 8px; border: 1px solid #30363d;
-        background-color: #21262d; color: #E6EDF3; transition: 0.3s; text-align: left;
-    }
-    .stButton>button:hover { border-color: #FF6B00; color: #FF6B00; }
-    
-    /* Primary Action Buttons (DevSync Orange) */
-    div.stButton > button:first-child[kind="primary"] {
-        background-color: #FF6B00; border: none; color: white; font-weight: bold;
+    /* 1. The Global Background (GitHub Dark) */
+    .stApp {
+        background-color: #0D1117 !important;
+        color: #E6EDF3 !important;
     }
 
-    /* AI Panel Container */
-    .ai-container { background-color: #161B22; border: 1px solid #30363d; border-radius: 12px; padding: 15px; }
+    /* 2. Sidebar Customization */
+    [data-testid="stSidebar"] {
+        background-color: #161B22 !important;
+        border-right: 1px solid #30363d !important;
+        min-width: 300px !important;
+    }
+
+    /* 3. The "DevSync Orange" Primary Buttons */
+    div.stButton > button:first-child {
+        background-color: #FF6B00 !important; /* Deep Orange */
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        height: 3em !important;
+        transition: 0.3s ease all !important;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #E65C00 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3) !important;
+    }
+
+    /* 4. Room Selection Buttons (Ghost Style) */
+    .stButton > button {
+        background-color: transparent !important;
+        color: #8B949E !important;
+        border: 1px solid #30363d !important;
+        text-align: left !important;
+        padding-left: 20px !important;
+    }
+    .stButton > button:hover {
+        border-color: #FF6B00 !important;
+        color: #FF6B00 !important;
+    }
+
+    /* 5. Chat Input Styling */
+    .stChatInputContainer {
+        padding-bottom: 20px !important;
+    }
+    
+    /* 6. AI Assistant Panel Glow */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border: 1px solid #30363d !important;
+        border-radius: 12px !important;
+        background-color: #161B22 !important;
+    }
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # 3. INITIALIZE BACKEND IN SESSION STATE
 if 'manager' not in st.session_state:
