@@ -11,7 +11,7 @@ load_dotenv()
 st.set_page_config(page_title="DevSync AI", page_icon="🚀", layout="wide", initial_sidebar_state="expanded")
 
 # 2. DEVSYNC CUSTOM UI STYLING
-sst.markdown("""
+st.markdown("""
     <style>
     /* 1. Global Dark Theme */
     .stApp { background-color: #0E1116 !important; color: #E6EDF3; }
