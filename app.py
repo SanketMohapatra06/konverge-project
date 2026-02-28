@@ -15,6 +15,7 @@ load_dotenv()
 # ---------------------------------------------------------
 @st.cache_resource
 def get_global_engines():
+    """ Keeps one backend instance alive for all users globally. """
     auth = AuthManager()
     manager = ChatRoomManager()
     manager.create_room("React Hooks Deep Dive", language="TypeScript")
@@ -24,12 +25,13 @@ def get_global_engines():
 auth_engine, chat_engine = get_global_engines()
 
 # ---------------------------------------------------------
-# 3. MASTER STYLESHEET (Fixed Ghost Box)
+# 3. MASTER STYLESHEET (Fixed Ghost Box & Figma Fidelity)
 # ---------------------------------------------------------
 st.set_page_config(page_title="Arknok DevSync", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
+    /* Global Background */
     .stApp { background-color: #0E1116 !important; color: #E6EDF3 !important; font-family: 'Inter', sans-serif; }
     
     /* GHOST BOX KILLER: Target the native container directly */
@@ -40,11 +42,16 @@ st.markdown("""
         padding: 40px !important;
     }
 
+    /* Sidebar Stealth Mode */
     [data-testid="stSidebar"] { background-color: #0D0D0D !important; border-right: 1px solid #1F1F1F !important; }
     .stChatInput textarea { font-family: 'Courier New', monospace !important; background-color: #0D1117 !important; color: #58A6FF !important; }
+    
+    /* Glowing Arknok AI Panel */
     [data-testid="column"]:nth-of-type(2) { background-color: #161412 !important; border-left: 1px solid #302A24 !important; padding: 24px !important; border-radius: 12px; }
+    .ai-header { color: #FF6B00; font-weight: 700; font-size: 18px; margin-bottom: 10px; }
     .ai-fix-card { background-color: #1C1917; border: 1px solid #44372B; border-radius: 12px; padding: 15px; margin-top: 10px; }
     
+    /* Action Buttons (Orange Gradient) */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #FF6B00 0%, #E65C00 100%) !important;
         border: none !important; color: white !important; font-weight: 600 !important;
@@ -62,7 +69,7 @@ if 'authenticated' not in st.session_state:
 if not st.session_state.authenticated:
     _, col2, _ = st.columns([1, 1.4, 1])
     with col2:
-        # Use native container with border to kill the ghost box
+        # Using native container with border to kill the ghost box
         with st.container(border=True):
             st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>Welcome back</h1>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: #8B949E; margin-bottom: 25px;'>Sign in to continue coding</p>", unsafe_allow_html=True)
@@ -87,7 +94,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ---------------------------------------------------------
-# 5. WORKSPACE (Active Content)
+# 5. WORKSPACE (High-Speed Logic)
 # ---------------------------------------------------------
 if 'active_room' not in st.session_state:
     st.session_state.active_room = "React Hooks Deep Dive"
@@ -95,7 +102,8 @@ if 'active_room' not in st.session_state:
 current_room = chat_engine.get_room(st.session_state.active_room)
 current_room.join(st.session_state.username)
 
-@st.fragment(run_every="5s")
+# SPEED UPDATE: 2s refresh for real-time presence
+@st.fragment(run_every="2s")
 def sync_status(room):
     st.caption(f"ONLINE — {len([m for m in room.members.values() if m == 'online'])}")
     for u, s in room.members.items():
@@ -137,10 +145,12 @@ with chat_col:
         if st.button("Send to Arknok AI 🚀", use_container_width=True):
             if raw_code:
                 current_room.add_message(st.session_state.username, f"@ai Fix this code:\n\n```{raw_code}```")
+                st.toast("✨ Arknok AI analysis started...") # Feedback for latency
                 st.rerun()
 
 with ai_col:
     st.markdown("<div class='ai-header'>✨ Arknok AI</div>", unsafe_allow_html=True)
+    # DYNAMIC HISTORY SYNC
     ai_history = [m for m in current_room.messages if m["user"] == "AI_Assistant"]
     insight = ai_history[-1]["content"] if ai_history else "No bugs detected yet."
     st.markdown(f"<div class='ai-fix-card'>{insight}</div>", unsafe_allow_html=True)
