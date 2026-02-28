@@ -1,5 +1,7 @@
 import streamlit as st
 import time
+from chat_engine import ChatRoomManager
+from auth_engine import AuthManager
 
 # IMPORT ASMIT'S BACKEND ENGINE
 from chat_engine import ChatRoomManager
@@ -33,8 +35,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. FUNCTIONAL AUTHENTICATION
+# 2. FUNCTIONAL AUTHENTICATION (Integrated with AuthManager)
 # ---------------------------------------------------------
+# Initialize AuthManager in session state so it remembers users
+if 'auth_manager' not in st.session_state:
+    st.session_state.auth_manager = AuthManager()
+
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
@@ -45,14 +51,31 @@ if not st.session_state.authenticated:
         st.header("🚀 DevSync AI")
         st.caption("Sign in to continue coding")
         
-        username_input = st.text_input("Developer Handle", placeholder="e.g., SanketMohapatra06")
-        password_input = st.text_input("Password", type="password")
+        # Create Tabs for Login and Sign Up
+        tab1, tab2 = st.tabs(["Login", "Sign Up"])
         
-        if st.button("Sign In →", type="primary", use_container_width=True):
-            if username_input: # Basic validation allowing any entered username
-                st.session_state.authenticated = True
-                st.session_state.username = username_input
-                st.rerun()
+        with tab1:
+            log_user = st.text_input("Username", key="log_user")
+            log_pass = st.text_input("Password", type="password", key="log_pass")
+            if st.button("Sign In →", type="primary", use_container_width=True):
+                success, msg = st.session_state.auth_manager.login(log_user, log_pass)
+                if success:
+                    st.session_state.authenticated = True
+                    st.session_state.username = log_user
+                    st.rerun()
+                else:
+                    st.error(msg) # Shows red error box for wrong password
+                    
+        with tab2:
+            reg_user = st.text_input("New Username", key="reg_user")
+            reg_pass = st.text_input("New Password", type="password", key="reg_pass")
+            if st.button("Create Account", use_container_width=True):
+                success, msg = st.session_state.auth_manager.signup(reg_user, reg_pass)
+                if success:
+                    st.success("Account created! You can now log in.")
+                else:
+                    st.error(msg)
+                    
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop() # Halts the script here if not logged in
 
