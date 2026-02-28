@@ -98,23 +98,51 @@ if not st.session_state.authenticated:
 current_room = st.session_state.manager.get_room(st.session_state.active_room)
 current_room.join(st.session_state.username)
 
+# --- THE SIDEBAR FRAGMENT (Real-time status updates) ---
+@st.fragment(run_every="5s")
+def sync_member_status(room):
+    """Refreshes status dots in the sidebar every 5 seconds"""
+    st.caption(f"ONLINE — {len([m for m in room.members.values() if m == 'online'])}")
+    for user, status in room.members.items():
+        color = "#23A559" if status == "online" else "#80848E"
+        st.markdown(f"<span style='color:{color}'>●</span> **{user}**", unsafe_allow_html=True)
+
 # SIDEBAR: Rooms & Online Status
 with st.sidebar:
     st.markdown("### DevSync AI")
     st.caption("Collaborative Coding Hub")
     st.write("---")
     
+    # 1. THE MISSING CREATE ROOM SECTION
+    with st.expander("➕ Create New Room"):
+        new_name = st.text_input("Room Name", placeholder="e.g., Backend Bug Hunt", key="sidebar_new_room_input")
+        new_lang = st.selectbox("Language", ["TypeScript", "Python", "JavaScript", "C++", "Go"], key="sidebar_new_room_lang")
+        
+        if st.button("Create Room", type="primary", use_container_width=True, key="sidebar_create_btn"):
+            if new_name:
+                st.session_state.manager.create_room(new_name, language=new_lang)
+                st.session_state.active_room = new_name
+                st.success(f"Room {new_name} created!")
+                st.rerun()
+
+    st.write("---")
     st.caption("MY ROOMS")
+    # Navigation loop with unique keys
     for room in st.session_state.manager.list_rooms():
-        if st.button(f"#{room['name']}", key=f"nav_{room['name']}", use_container_width=True):
+        if st.button(f"#{room['name']}", key=f"nav_sidebar_{room['name']}", use_container_width=True):
             st.session_state.active_room = room['name']
             st.rerun()
     
     st.write("---")
-    st.caption(f"ONLINE — {len(current_room.members)}")
-    for user, status in current_room.members.items():
-        color = "#23A559" if status == "online" else "#80848E"
-        st.markdown(f"<span style='color:{color}'>●</span> **{user}**", unsafe_allow_html=True)
+    # 2. CALL THE FRAGMENT (For real-time dots)
+    sync_member_status(current_room)
+    
+    st.write("---")
+    # 3. LOGOUT BUTTON (Added back for completeness)
+    if st.button("🚪 Log Out", use_container_width=True, key="sidebar_logout_btn"):
+        current_room.leave(st.session_state.username)
+        st.session_state.authenticated = False
+        st.rerun()
 
 # MAIN LAYOUT: Split 2.5 : 1.2
 chat_col, ai_col = st.columns([2.5, 1.2], gap="large")
@@ -124,12 +152,14 @@ with chat_col:
     st.caption(f"{current_room.language} • {len(current_room.members)} members")
     st.write("---")
 
+    # Chat Messages with Avatars
     for msg in current_room.messages:
         is_ai = msg["user"] == "AI_Assistant"
         with st.chat_message("assistant" if is_ai else "user"):
             st.markdown(f"<div class='user-msg-header'>{msg['user']} • {msg['timestamp']}</div>", unsafe_allow_html=True)
             st.markdown(msg["content"])
 
+    # VS Code Style Code Input
     if prompt := st.chat_input("Type a message... (use @ai to ask Arknok AI)"):
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -144,7 +174,7 @@ with chat_col:
         st.rerun()
 
 with ai_col:
-    # REBRANDED TO ARKNOK AI
+    # THE AI ASSISTANT PANEL
     st.markdown("<div class='ai-header'>✨ Arknok AI</div>", unsafe_allow_html=True)
     st.caption("Monitoring session context")
     
@@ -154,6 +184,6 @@ with ai_col:
     st.markdown("</div>", unsafe_allow_html=True)
     
     st.write("---")
-    # ONLY PRIMARY ACTION REMAINING
-    if st.button("Apply Fix 🛠️", type="primary", use_container_width=True):
+    # PRIMARY ACTION BUTTON
+    if st.button("Apply Fix 🛠️", type="primary", use_container_width=True, key="apply_fix_btn"):
         st.success("Correction applied to local buffer!")
