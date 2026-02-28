@@ -178,7 +178,7 @@ with chat_col:
             key=f"editor_v1_{current_room.name}"
         )
         
-        if st.button("Send Code to Arknok AI 🚀", use_container_width=True, key="send_to_ai_btn"):
+        if st.button("Send Code to Arknok AI", use_container_width=True, key="send_to_ai_btn"):
             if raw_code:
                 hidden_p = f"@ai Analyze and fix this {current_room.language} code:\n\n```{raw_code}```"
                 with st.spinner("Arknok AI is reviewing editor content..."):
@@ -190,7 +190,7 @@ with chat_col:
 
 with ai_col:
     # REBRANDED TO ARKNOK AI
-    st.markdown("<div class='ai-header'>✨ Arknok AI</div>", unsafe_allow_html=True)
+    st.markdown("<div class='ai-header'> Arknok AI</div>", unsafe_allow_html=True)
     st.caption("Monitoring session context")
     
     st.markdown("<div class='ai-fix-card'>", unsafe_allow_html=True)
@@ -199,5 +199,5 @@ with ai_col:
     st.markdown("</div>", unsafe_allow_html=True)
     
     st.write("---")
-    if st.button("Apply Fix 🛠️", type="primary", use_container_width=True, key="apply_fix_btn"):
+    if st.button("Apply Fix", type="primary", use_container_width=True, key="apply_fix_btn"):
         st.success("Correction applied to local buffer!")
