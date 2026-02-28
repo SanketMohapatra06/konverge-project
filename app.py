@@ -1,220 +1,155 @@
 import streamlit as st
-import os
-from dotenv import load_dotenv
+import time
 
-# Import Asmit's Backend Engine
+# IMPORT ASMIT'S BACKEND ENGINE
 from chat_engine import ChatRoomManager
 
-load_dotenv()
+# ---------------------------------------------------------
+# 1. PAGE SETUP & DEVSYNC CSS
+# ---------------------------------------------------------
+st.set_page_config(page_title="DevSync AI", layout="wide", initial_sidebar_state="expanded")
 
-# 1. PAGE CONFIGURATION
-st.set_page_config(page_title="DevSync AI", page_icon="🚀", layout="wide", initial_sidebar_state="expanded")
-
-# 2. DEVSYNC CUSTOM UI STYLING
 st.markdown("""
     <style>
-    /* 1. Global Dark Theme */
-    .stApp { background-color: #0E1116 !important; color: #E6EDF3; }
-    [data-testid="stHeader"] { background-color: transparent !important; }
+    /* Global Dark Theme */
+    .stApp { background-color: #0E1116 !important; color: #E6EDF3 !important; }
     
-    /* 2. SIDEBAR - Stealth Mode (No Orange Blocks) */
-    [data-testid="stSidebar"] {
-        background-color: #161B22 !important;
-        border-right: 1px solid #30363D !important;
-    }
-    /* Make sidebar buttons look like plain text */
-    [data-testid="stSidebar"] div.stButton > button {
-        background-color: transparent !important;
-        border: none !important;
-        color: #8B949E !important;
-        text-align: left !important;
-        justify-content: flex-start !important;
-        font-weight: 500 !important;
-        padding: 5px 10px !important;
-        box-shadow: none !important;
-    }
-    [data-testid="stSidebar"] div.stButton > button:hover {
-        color: #FFFFFF !important;
-        background-color: rgba(255, 255, 255, 0.05) !important;
-    }
-
-    /* 3. RIGHT AI PANEL - Clean Cards & Buttons */
-    /* Container styling for the AI response */
-    [data-testid="column"]:nth-of-type(2) {
-        background-color: #13171C !important;
-        border-left: 1px solid #30363D !important;
-        padding: 20px !important;
-        border-radius: 12px;
-    }
-    /* Secondary Action Buttons (Explain, Optimize) */
-    [data-testid="column"]:nth-of-type(2) div.stButton > button {
-        background-color: #1A1F26 !important;
-        border: 1px solid #30363D !important;
-        color: #E6EDF3 !important;
-        border-radius: 8px !important;
-        width: 100% !important;
-        margin-bottom: 5px !important;
-    }
-    [data-testid="column"]:nth-of-type(2) div.stButton > button:hover {
-        border-color: #FF6B00 !important;
-        color: #FF6B00 !important;
-    }
+    /* Login Card */
+    .login-container { max-width: 400px; margin: 10vh auto; padding: 40px; background-color: #161B22; border: 1px solid #30363D; border-radius: 12px; }
     
-    /* 4. THE DEVSYNC ORANGE BUTTON (Only for Apply Fix) */
-    div.stButton > button[kind="primary"] {
-        background-color: #FF6B00 !important;
-        color: white !important;
-        border: none !important;
-        font-weight: bold !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #E65C00 !important;
-    }
+    /* Sidebar Stealth Mode */
+    [data-testid="stSidebar"] { background-color: #161B22 !important; border-right: 1px solid #30363D !important; }
     
-    /* 5. Chat Input */
-    .stChatInputContainer { border-top: 1px solid #30363D; padding-top: 10px; }
+    /* VS Code Style Chat Input */
+    .stChatInput textarea { font-family: 'Courier New', monospace !important; font-size: 14px !important; background-color: #0D1117 !important; color: #58A6FF !important; }
+    
+    /* DevSync Orange Action Buttons */
+    div.stButton > button[kind="primary"] { background-color: #FF6B00 !important; color: white !important; border: none !important; font-weight: bold !important; border-radius: 8px !important; }
+    div.stButton > button[kind="primary"]:hover { background-color: #E65C00 !important; }
+    
+    /* Right AI Panel Container */
+    [data-testid="column"]:nth-of-type(2) { background-color: #13171C !important; border-left: 1px solid #30363D !important; padding: 20px !important; border-radius: 12px; }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. INITIALIZE BACKEND IN SESSION STATE
-if 'manager' not in st.session_state:
-    # Boot up Asmit's manager
-    manager = ChatRoomManager()
-    # Seed some default rooms
-    manager.create_room("React Hooks Deep Dive", language="TypeScript")
-    manager.create_room("Python ML Pipeline", language="Python")
-    manager.create_room("Node.js API Design", language="JavaScript")
-    
-    # Add fake users so the rooms aren't empty
-    manager.get_room("React Hooks Deep Dive").join("Sanket")
-    manager.get_room("React Hooks Deep Dive").join("Aditi")
-    
-    st.session_state.manager = manager
-    st.session_state.active_room = "React Hooks Deep Dive"
-    st.session_state.username = "Sanket"
-
-# Holds the data for the right-hand AI Panel
-if 'ai_display' not in st.session_state:
-    st.session_state.ai_display = "No code analyzed yet. Tag @ai in the chat to start."
-
-# Get the current room object
-current_room = st.session_state.manager.get_room(st.session_state.active_room)
-
 # ---------------------------------------------------------
-# PANEL 1: SIDEBAR (Navigation)
+# 2. FUNCTIONAL AUTHENTICATION
 # ---------------------------------------------------------
-with st.sidebar:
-    st.subheader("🚀 DevSync AI")
-    st.write("---")
-    
-    # Notice we don't use type="primary" anymore!
-    st.button("# React Hooks Deep Dive")
-    st.button("# Python ML Pipeline")
-    st.button("# Node.js API Design")
-    
-    st.write("---")
-    st.caption("ONLINE — 3")
-    st.markdown("🟢 **Sanket**")
-    st.markdown("🟢 **Asmit**")
-    st.markdown("🟢 **Aditi**")
-    st.write("")
-    st.caption("OFFLINE — 2")
-    st.markdown("⚪ Mike Wilson")
-    st.markdown("⚪ Emma Davis")
-    
-    st.subheader("My Rooms")
-    # Dynamically list rooms from Asmit's manager
-    for room_info in st.session_state.manager.list_rooms():
-        # If clicked, change the active room
-        if st.button(f"#{room_info['name']}"):
-            st.session_state.active_room = room_info['name']
-            st.rerun()
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
 
-    st.write("---")
-    
-    # Fake Create Room Modal (Expander)
-    with st.expander("+ Create New Room"):
-        new_room_name = st.text_input("Room Name")
-        new_room_lang = st.selectbox("Language", ["Python", "JavaScript", "TypeScript", "Auto"])
-        if st.button("Create", type="primary"):
-            if new_room_name:
-                st.session_state.manager.create_room(new_room_name, language=new_room_lang)
-                st.session_state.active_room = new_room_name
+if not st.session_state.authenticated:
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    with col2:
+        st.markdown("<div class='login-container'>", unsafe_allow_html=True)
+        st.header("🚀 DevSync AI")
+        st.caption("Sign in to continue coding")
+        
+        username_input = st.text_input("Developer Handle", placeholder="e.g., SanketMohapatra06")
+        password_input = st.text_input("Password", type="password")
+        
+        if st.button("Sign In →", type="primary", use_container_width=True):
+            if username_input: # Basic validation allowing any entered username
+                st.session_state.authenticated = True
+                st.session_state.username = username_input
                 st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.stop() # Halts the script here if not logged in
 
 # ---------------------------------------------------------
-# PANEL 2 & 3: MAIN WORKSPACE
+# 3. INITIALIZE ASMIT'S BACKEND
 # ---------------------------------------------------------
-chat_col, ai_col = st.columns([2.2, 1], gap="large")
+if 'manager' not in st.session_state:
+    # This boots up Asmit's backend ONCE when the app starts
+    st.session_state.manager = ChatRoomManager()
+    st.session_state.manager.create_room("React Hooks Deep Dive", language="TypeScript")
+    st.session_state.manager.create_room("Python ML Pipeline", language="Python")
+    st.session_state.manager.create_room("Backend API", language="Node.js")
+    
+    st.session_state.active_room = "React Hooks Deep Dive"
+    st.session_state.latest_ai_fix = "No bugs detected yet. Paste code and tag @ai to begin."
 
-# --- PANEL 2: CENTRAL CHAT ---
+# Get the current room object and make sure the user is in it
+current_room = st.session_state.manager.get_room(st.session_state.active_room)
+if st.session_state.username not in current_room.members:
+    current_room.join(st.session_state.username)
+
+# ---------------------------------------------------------
+# 4. DYNAMIC SIDEBAR (Fragment for Real-Time Status)
+# ---------------------------------------------------------
+@st.fragment(run_every="5s")
+def render_sidebar():
+    with st.sidebar:
+        st.subheader("DevSync AI")
+        st.write("---")
+        
+        st.caption("CHANNELS")
+        for room_info in st.session_state.manager.list_rooms():
+            # Standard buttons acting as navigation links
+            if st.button(f"# {room_info['name']}", key=f"nav_{room_info['name']}"):
+                st.session_state.active_room = room_info['name']
+                st.rerun()
+                
+        st.write("---")
+        st.caption(f"ONLINE — {len(current_room.members)}")
+        
+        # Reads Asmit's member dictionary dynamically
+        for user, status in current_room.members.items():
+            if status == "online":
+                st.markdown(f"🟢 **{user}**")
+            else:
+                st.markdown(f"⚪ {user}")
+
+render_sidebar()
+
+# ---------------------------------------------------------
+# 5. MAIN WORKSPACE (Chat & AI Panel)
+# ---------------------------------------------------------
+chat_col, ai_col = st.columns([2.5, 1.2], gap="large")
+
 with chat_col:
-    # Room Header
     st.header(f"# {current_room.name}")
-    st.caption(f"{current_room.language} • {len(current_room.members)} members online")
     st.write("---")
 
-    # Render Chat History directly from Asmit's ChatRoom object
+    # Render history from Asmit's ChatRoom object
     for msg in current_room.messages:
-        # Check if the message is from the AI to change the avatar
-        is_ai = msg["user"] == "AI_Assistant"
-        with st.chat_message("assistant" if is_ai else "user"):
-            st.write(f"**{msg['user']}** `{msg['timestamp']}`")
+        role = "assistant" if msg["user"] == "AI_Assistant" else "user"
+        with st.chat_message(role):
+            st.markdown(f"**{msg['user']}** <span style='color:gray; font-size:12px;'>{msg['timestamp']}</span>", unsafe_allow_html=True)
             st.markdown(msg["content"])
 
-    # Chat Input Box
-    if prompt := st.chat_input(f"Message #{current_room.name} or use @ai to debug..."):
-        # Asmit's logic: add_message returns a value IF @ai is tagged
-        ai_response = current_room.add_message(st.session_state.username, prompt)
+    # VS Code Style Chat Input
+    if prompt := st.chat_input("Type a message or paste code. Use @ai to debug..."):
         
-        # If Asmit's backend caught an @ai tag and processed it
-        if ai_response:
-            # Update the right-hand panel with the raw AI output
-            st.session_state.ai_display = ai_response["content"]
+        # Immediate UI update for the user's message
+        with st.chat_message("user"):
+            st.markdown(f"**{st.session_state.username}**")
+            st.markdown(prompt)
+
+        if "@ai" in prompt.lower():
+            # SIMULATED TYPING EFFECT
+            with st.chat_message("assistant"):
+                with st.spinner("Arknok AI is analyzing context and writing fix..."):
+                    # This calls Asmit's backend -> which calls Groq -> which returns the fix
+                    ai_response = current_room.add_message(st.session_state.username, prompt)
+            
+            # Store the result so the right panel can display it
+            if ai_response:
+                st.session_state.latest_ai_fix = ai_response["content"]
+        else:
+            # Standard message without AI trigger
+            current_room.add_message(st.session_state.username, prompt)
             
         st.rerun()
 
-# --- PANEL 3: RIGHT AI ASSISTANT PANEL ---
 with ai_col:
-    st.markdown("### ✨ AI Assistant")
+    st.subheader("✨ AI Assistant")
     st.caption("Powered by Groq LLM")
     st.write("---")
     
-    # Display Asmit's raw output
-    st.markdown(st.session_state.ai_display)
+    # Display the latest fix generated by Asmit's backend
+    st.markdown("**Current Analysis:**")
+    st.markdown(st.session_state.latest_ai_fix)
     
     st.write("---")
-    # THE MAGIC: type="primary" makes ONLY this button DevSync Orange
     st.button("Apply Fix 🛠️", type="primary", use_container_width=True)
-    
-    # These stay dark grey until hovered
-    st.button("Explain in simple terms 📖", use_container_width=True)
-    st.button("Optimize code ⚡", use_container_width=True)
-    
-    with st.container(border=True):
-        st.markdown("**Current Analysis:**")
-        
-        # Display the AI output generated from Asmit's backend
-        st.markdown(st.session_state.ai_display)
-        
-        st.write("---")
-        # Action Buttons
-        st.button("Apply Fix 🛠️", type="primary")
-        
-        # Extra feature: Manually trigger Asmit's modes without chatting
-        col_a, col_b = st.columns(2)
-        with col_a:
-            if st.button("Explain 📖"):
-                # Grab the last message to explain
-                if current_room.messages:
-                    last_msg = current_room.messages[-1]["content"]
-                    exp_resp = current_room.trigger_ai(last_msg, mode="explain")
-                    st.session_state.ai_display = exp_resp
-                    st.rerun()
-        with col_b:
-            if st.button("Optimize ⚡"):
-                if current_room.messages:
-                    last_msg = current_room.messages[-1]["content"]
-                    opt_resp = current_room.trigger_ai(last_msg, mode="optimize")
-                    st.session_state.ai_display = opt_resp
-                    st.rerun()
