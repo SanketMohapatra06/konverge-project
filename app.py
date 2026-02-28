@@ -104,9 +104,23 @@ current_room = st.session_state.manager.get_room(st.session_state.active_room)
 # PANEL 1: SIDEBAR (Navigation)
 # ---------------------------------------------------------
 with st.sidebar:
-    st.title("🚀 DevSync AI")
-    st.caption("Collaborative Coding Hub")
+    st.subheader("🚀 DevSync AI")
     st.write("---")
+    
+    # Notice we don't use type="primary" anymore!
+    st.button("# React Hooks Deep Dive")
+    st.button("# Python ML Pipeline")
+    st.button("# Node.js API Design")
+    
+    st.write("---")
+    st.caption("ONLINE — 3")
+    st.markdown("🟢 **Sanket**")
+    st.markdown("🟢 **Asmit**")
+    st.markdown("🟢 **Aditi**")
+    st.write("")
+    st.caption("OFFLINE — 2")
+    st.markdown("⚪ Mike Wilson")
+    st.markdown("⚪ Emma Davis")
     
     st.subheader("My Rooms")
     # Dynamically list rooms from Asmit's manager
@@ -162,8 +176,20 @@ with chat_col:
 
 # --- PANEL 3: RIGHT AI ASSISTANT PANEL ---
 with ai_col:
-    st.subheader("✨ AI Assistant")
+    st.markdown("### ✨ AI Assistant")
     st.caption("Powered by Groq LLM")
+    st.write("---")
+    
+    # Display Asmit's raw output
+    st.markdown(st.session_state.ai_display)
+    
+    st.write("---")
+    # THE MAGIC: type="primary" makes ONLY this button DevSync Orange
+    st.button("Apply Fix 🛠️", type="primary", use_container_width=True)
+    
+    # These stay dark grey until hovered
+    st.button("Explain in simple terms 📖", use_container_width=True)
+    st.button("Optimize code ⚡", use_container_width=True)
     
     with st.container(border=True):
         st.markdown("**Current Analysis:**")
