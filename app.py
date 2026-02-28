@@ -10,16 +10,16 @@ from auth_engine import AuthManager
 load_dotenv()
 
 # ---------------------------------------------------------
-# 2. PAGE SETUP & FIGMA-STRICT CSS
+# 2. THE MASTER ARNOK STYLESHEET
 # ---------------------------------------------------------
 st.set_page_config(page_title="Arknok DevSync", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    /* Global Background */
-    .stApp { background-color: #0E1116 !important; color: #E6EDF3 !important; }
+    /* Global Styles */
+    .stApp { background-color: #0E1116 !important; color: #E6EDF3 !important; font-family: 'Inter', sans-serif; }
     
-    /* Figma Login Card */
+    /* Figma Login Card (Glass Effect) */
     .login-card {
         background-color: #161B22; padding: 50px; border-radius: 16px;
         border: 1px solid #30363D; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -27,18 +27,21 @@ st.markdown("""
     .login-header { font-size: 32px; font-weight: 700; color: #FFFFFF; margin-bottom: 5px; }
     .login-subtitle { color: #8B949E; margin-bottom: 30px; }
     
+    /* Sidebar: Stealth & Status */
+    [data-testid="stSidebar"] { background-color: #0D0D0D !important; border-right: 1px solid #1F1F1F !important; }
+    
+    /* VS Code Style Chat Input */
+    .stChatInput textarea { font-family: 'Courier New', monospace !important; font-size: 14px !important; background-color: #0D1117 !important; color: #58A6FF !important; }
+    
+    /* Right Panel: Glowing AI Assistant */
+    [data-testid="column"]:nth-of-type(2) { background-color: #161412 !important; border-left: 1px solid #302A24 !important; padding: 24px !important; border-radius: 12px; }
+    
     /* DevSync Orange Action Buttons */
     div.stButton > button[kind="primary"] {
-        background-color: #FF6B00 !important; color: white !important;
-        height: 50px !important; font-size: 18px !important; 
-        border: none !important; font-weight: bold !important; border-radius: 10px !important;
+        background: linear-gradient(135deg, #FF6B00 0%, #E65C00 100%) !important;
+        border: none !important; color: white !important; font-weight: 600 !important;
+        height: 48px !important; border-radius: 10px !important; transition: 0.3s !important;
     }
-    div.stButton > button[kind="primary"]:hover { background-color: #E65C00 !important; }
-
-    /* VS Code Style Elements */
-    [data-testid="stSidebar"] { background-color: #161B22 !important; border-right: 1px solid #30363D !important; }
-    .stChatInput textarea { font-family: 'Courier New', monospace !important; font-size: 14px !important; background-color: #0D1117 !important; color: #58A6FF !important; }
-    [data-testid="column"]:nth-of-type(2) { background-color: #13171C !important; border-left: 1px solid #30363D !important; padding: 20px !important; border-radius: 12px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -71,9 +74,8 @@ if not st.session_state.authenticated:
         
         tab1, tab2 = st.tabs(["Login", "Sign Up"])
         with tab1:
-            log_user = st.text_input("Email", placeholder="you@example.com", key="log_user")
+            log_user = st.text_input("Username", placeholder="you@example.com", key="log_user")
             log_pass = st.text_input("Password", type="password", placeholder="Enter password", key="log_pass")
-            st.write("")
             if st.button("Sign In →", type="primary", use_container_width=True, key="login_submit"):
                 success, msg = st.session_state.auth_manager.login(log_user, log_pass)
                 if success:
@@ -82,11 +84,11 @@ if not st.session_state.authenticated:
                     st.rerun()
                 else: st.error(msg)
         with tab2:
-            reg_user = st.text_input("New Username", placeholder="e.g., SanketMohapatra06", key="reg_user")
-            reg_pass = st.text_input("New Password", type="password", placeholder="Minimum 8 characters", key="reg_pass")
+            reg_user = st.text_input("Choose Username", placeholder="e.g., SanketMohapatra06", key="reg_user")
+            reg_pass = st.text_input("Choose Password", type="password", placeholder="Minimum 8 characters", key="reg_pass")
             if st.button("Create Account", use_container_width=True, key="signup_submit"):
                 success, msg = st.session_state.auth_manager.signup(reg_user, reg_pass)
-                if success: st.success("Account created! Switch to Login.")
+                if success: st.success("Account created! Switch to Login tab.")
                 else: st.error(msg)
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -99,9 +101,11 @@ current_room.join(st.session_state.username)
 
 @st.fragment(run_every="5s")
 def sync_member_status(room):
+    """Refreshes status dots in the sidebar"""
     st.caption(f"ONLINE — {len([m for m in room.members.values() if m == 'online'])}")
     for user, status in room.members.items():
-        st.markdown(f"🟢 **{user}**" if status == "online" else f"⚪ {user}")
+        color = "#23A559" if status == "online" else "#80848E"
+        st.markdown(f"<span style='color:{color}'>●</span> **{user}**", unsafe_allow_html=True)
 
 with st.sidebar:
     st.subheader("DevSync AI")
@@ -117,7 +121,7 @@ with st.sidebar:
     st.write("---")
     st.caption("CHANNELS")
     for room_info in st.session_state.manager.list_rooms():
-        if st.button(f"# {room_info['name']}", key=f"nav_v2_{room_info['name']}", use_container_width=True):
+        if st.button(f"# {room_info['name']}", key=f"nav_v3_{room_info['name']}", use_container_width=True):
             st.session_state.active_room = room_info['name']
             st.rerun()
     st.write("---")
@@ -128,34 +132,44 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
 
+# Workspace Layout: 2.5 : 1.2
 chat_col, ai_col = st.columns([2.5, 1.2], gap="large")
+
 with chat_col:
-    st.header(f"# {current_room.name}")
+    st.markdown(f"### # {current_room.name}")
     st.caption(f"{current_room.language} • {len(current_room.members)} members")
     st.write("---")
+    
     for msg in current_room.messages:
-        role = "assistant" if msg["user"] == "AI_Assistant" else "user"
-        with st.chat_message(role):
-            st.markdown(f"**{msg['user']}** <span style='color:gray; font-size:12px;'>{msg['timestamp']}</span>", unsafe_allow_html=True)
+        is_ai = msg["user"] == "AI_Assistant"
+        with st.chat_message("assistant" if is_ai else "user"):
+            st.markdown(f"<span style='color:gray; font-size:12px;'>{msg['user']} • {msg['timestamp']}</span>", unsafe_allow_html=True)
             st.markdown(msg["content"])
-    if prompt := st.chat_input("Paste code or type @ai to debug..."):
+
+    if prompt := st.chat_input("Type a message or use @ai to debug..."):
         with st.chat_message("user"):
-            st.markdown(f"**{st.session_state.username}**")
+            st.markdown(f"<span style='color:gray; font-size:12px;'>{st.session_state.username}</span>", unsafe_allow_html=True)
             st.markdown(prompt)
+
         if "@ai" in prompt.lower():
             with st.chat_message("assistant"):
-                with st.spinner("Arknok AI analyzing..."):
+                with st.spinner("Arknok AI analyzing context..."):
                     ai_response = current_room.add_message(st.session_state.username, prompt)
             if ai_response: st.session_state.latest_ai_fix = ai_response["content"]
-        else: current_room.add_message(st.session_state.username, prompt)
+        else:
+            current_room.add_message(st.session_state.username, prompt)
         st.rerun()
 
 with ai_col:
-    st.subheader("✨ AI Assistant")
-    st.write("---")
+    # Glowing AI Assistant Panel
+    st.markdown("<div style='color: #FF6B00; font-weight: 700; font-size: 18px;'>✨ AI Assistant</div>", unsafe_allow_html=True)
+    st.caption("Powered by GPT-4")
+    
     with st.container(border=True):
-        st.markdown("**Current Analysis:**")
+        st.markdown("**Latest Insight:**")
         st.markdown(st.session_state.latest_ai_fix)
         st.write("---")
-        if st.button("Apply Fix 🛠️", type="primary", use_container_width=True, key="apply_fix"):
-            st.success("Code staged to local buffer!")
+        # ACTION BUTTONS
+        st.button("Apply Fix 🛠️", type="primary", use_container_width=True, key="apply_fix")
+        st.button("Explain 📖", use_container_width=True, key="explain_btn")
+        st.button("Optimize ⚡", use_container_width=True, key="optimize_btn")
