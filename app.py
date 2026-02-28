@@ -99,6 +99,37 @@ with st.sidebar:
     st.subheader("DevSync AI")
     st.write("---")
     
+    # 1. THE CREATE ROOM "MODAL"
+    with st.expander("➕ Create New Room"):
+        new_name = st.text_input("Room Name", placeholder="e.g., React Bug Bash")
+        new_lang = st.selectbox("Language", ["TypeScript", "Python", "JavaScript", "C++", "Go"])
+        
+        if st.button("Create Room", type="primary", use_container_width=True):
+            if new_name:
+                # Calls Asmit's manager to add the room to the 'database'
+                st.session_state.manager.create_room(new_name, language=new_lang)
+                st.session_state.active_room = new_name
+                st.success(f"Room {new_name} created!")
+                st.rerun()
+
+    st.write("---")
+    st.caption("CHANNELS")
+    # Dynamically lists all rooms, including the ones you just created
+    for room_info in st.session_state.manager.list_rooms():
+        if st.button(f"# {room_info['name']}", key=f"nav_{room_info['name']}", use_container_width=True):
+            st.session_state.active_room = room_info['name']
+            st.rerun()
+            
+    st.write("---")
+    # CALL THE FRAGMENT HERE
+    sync_member_status(current_room)
+    
+    st.write("---")
+    if st.button("🚪 Log Out", use_container_width=True):
+        current_room.leave(st.session_state.username)
+        st.session_state.authenticated = False
+        st.rerun()
+    
     st.caption("CHANNELS")
     for room_info in st.session_state.manager.list_rooms():
         # Clean ghost buttons for rooms
